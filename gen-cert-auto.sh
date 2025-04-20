@@ -2,8 +2,8 @@
 
 DOMAIN="example.com"  # ⚠️ 请改成你的主域名（不要带 *）
 OUT_DIR="/root/hysteria"
-KEY_FILE="$OUT_DIR/$DOMAIN.key"
-CRT_FILE="$OUT_DIR/$DOMAIN.crt"
+KEY_FILE="$OUT_DIR/example.com.key"  # 固定为 example.com.key
+CRT_FILE="$OUT_DIR/example.com.crt"  # 固定为 example.com.crt
 CONFIG_FILE="./wildcard.cnf"
 RENEW_THRESHOLD=30  # 剩余天数小于这个就续
 

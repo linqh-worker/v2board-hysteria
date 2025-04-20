@@ -30,7 +30,7 @@ git clone https://github.com/linqh-worker/v2board-hysteria.git hysteria && cd hy
 ```
 vi gen-cert-auto.sh #第三行位置 DOMAIN换成你的节点域名保存后退出
 
-sh gen-cert-auto.sh 生成成功
+sh gen-cert-auto.sh #运行显示生成证书成功后进行下一步
 ```
 
 ---配置文件server.yaml参考

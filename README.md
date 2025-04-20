@@ -17,14 +17,14 @@ sudo systemctl enable docker
 docker --version
 docker compose version
 ```
-下载并修改配置文件docker-compose.yaml,server.yaml,包括前端信息和后端域名
+下载并修改配置文件docker-compose.yml,server.yaml,包括前端信息和后端域名
 ```
 git clone https://github.com/cedar2025/hysteria.git hysteria && cd hysteria
 ```
 ```
-apt install vim -y && vim docker-compose.yaml
+apt install vim -y && vim docker-compose.yml
 ```
----配置文件docker-compose.yaml参考
+---配置文件docker-compose.yml参考
 ```
 version: "3.9"
 services:

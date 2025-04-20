@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOMAIN="abc.com"  # ⚠️ 请改成你的主域名（不要带 *）
+DOMAIN="example.com"  # ⚠️ 请改成你的主域名（不要带 *）
 OUT_DIR="/root/hysteria"
 KEY_FILE="$OUT_DIR/$DOMAIN.key"
 CRT_FILE="$OUT_DIR/$DOMAIN.crt"

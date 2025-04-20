@@ -9,6 +9,18 @@ RENEW_THRESHOLD=30  # 剩余天数小于这个就续
 
 mkdir -p "$OUT_DIR"
 
+# 防止 key 文件路径是目录
+if [ -d "$KEY_FILE" ]; then
+    echo "⚠️ 错误：$KEY_FILE 是一个目录，删除中..."
+    rm -rf "$KEY_FILE"
+fi
+
+# 防止 crt 文件路径是目录
+if [ -d "$CRT_FILE" ]; then
+    echo "⚠️ 错误：$CRT_FILE 是一个目录，删除中..."
+    rm -rf "$CRT_FILE"
+fi
+
 should_renew() {
     if [ ! -f "$CRT_FILE" ]; then
         return 0  # 没有证书，肯定要生成

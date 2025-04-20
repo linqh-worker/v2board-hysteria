@@ -7,7 +7,7 @@
 本项目基于hysteria官方内核二次开发，添加了从 Xboard/V2board 获取节点信息、用户鉴权信息与上报用户流量的功能。
 性能方面已经由hysteria2内核作者亲自指导优化过了。
 
-### 试用说明
+### 使用说明
 
 准备工作：安装docker，docker compose
 

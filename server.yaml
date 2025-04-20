@@ -1,0 +1,19 @@
+v2board:
+  apiHost: https://example.com #v2board面板域名
+  apiKey: 123456789 #通讯密钥
+  nodeID: 1 #节点id
+tls:
+  type: tls
+  cert: /etc/hysteria/example.com.crt #example.com换成你自己的后端vps绑定域名
+  key: /etc/hysteria/example.com.key #example.com换成你自己的后端vps绑定域名
+auth:
+  type: v2board
+trafficStats:
+  listen: 127.0.0.1:7653
+acl:
+  inline:
+    - reject(10.0.0.0/8)
+    - reject(172.16.0.0/12)
+    - reject(192.168.0.0/16)
+    - reject(127.0.0.0/8)
+    - reject(fc00::/7)

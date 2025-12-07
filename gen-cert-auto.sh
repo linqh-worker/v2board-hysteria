@@ -42,7 +42,7 @@ should_renew() {
 
 
 #############################################
-# 申请 / 安装 证书
+# 申请 / 安装证书（含自动重试）
 #############################################
 issue_cert() {
 
@@ -50,13 +50,37 @@ issue_cert() {
 
     export CF_Token="$CF_API"
 
-    ~/.acme.sh/acme.sh --issue \
-        --dns dns_cf \
-        -d "$DOMAIN" \
-        -d "*.$DOMAIN" \
-        --server letsencrypt \
-        --keylength ec-256 \
-        --force
+    MAX_RETRY=5        # 最大重试次数
+    RETRY_DELAY=10     # 重试间隔秒数
+    SUCCESS=0
+
+    for ((i=1; i<=MAX_RETRY; i++)); do
+        
+        echo "🌀 尝试第 $i/$MAX_RETRY 次签发证书..."
+
+        ~/.acme.sh/acme.sh --issue \
+            --dns dns_cf \
+            -d "$DOMAIN" \
+            -d "*.$DOMAIN" \
+            --server letsencrypt \
+            --keylength ec-256 \
+            --force
+
+        # 判断证书是否生成成功
+        if [ -f "~/.acme.sh/${DOMAIN}_ecc/fullchain.cer" ] || [ -f "~/.acme.sh/${DOMAIN}_ecc/${DOMAIN}.cer" ]; then
+            echo "🎉 证书申请成功！"
+            SUCCESS=1
+            break
+        else
+            echo "⚠️ 第 $i 次申请失败，等待 $RETRY_DELAY 秒后重试..."
+            sleep $RETRY_DELAY
+        fi
+    done
+
+    if [ "$SUCCESS" -ne 1 ]; then
+        echo "❌ 证书申请连续 $MAX_RETRY 次失败，请检查 Cloudflare DNS 或 Token"
+        exit 1
+    fi
 
     ~/.acme.sh/acme.sh --install-cert -d "$DOMAIN" \
         --ecc \

@@ -50,9 +50,11 @@ issue_cert() {
 
     export CF_Token="$CF_API"
 
-    MAX_RETRY=5        # 最大重试次数
-    RETRY_DELAY=10     # 重试间隔秒数
+    MAX_RETRY=5
+    RETRY_DELAY=10
     SUCCESS=0
+
+    ACME_DIR="/root/.acme.sh/${DOMAIN}_ecc"
 
     for ((i=1; i<=MAX_RETRY; i++)); do
         
@@ -66,8 +68,8 @@ issue_cert() {
             --keylength ec-256 \
             --force
 
-        # 判断证书是否生成成功
-        if [ -f "~/.acme.sh/${DOMAIN}_ecc/fullchain.cer" ] || [ -f "~/.acme.sh/${DOMAIN}_ecc/${DOMAIN}.cer" ]; then
+        # 正确判断证书是否生成成功
+        if [ -f "$ACME_DIR/fullchain.cer" ] || [ -f "$ACME_DIR/${DOMAIN}.cer" ]; then
             echo "🎉 证书申请成功！"
             SUCCESS=1
             break
@@ -78,7 +80,7 @@ issue_cert() {
     done
 
     if [ "$SUCCESS" -ne 1 ]; then
-        echo "❌ 证书申请连续 $MAX_RETRY 次失败，请检查 Cloudflare DNS 或 Token"
+        echo "❌ 连续 $MAX_RETRY 次申请均失败，请检查 Cloudflare DNS 或 Token"
         exit 1
     fi
 

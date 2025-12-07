@@ -1,83 +1,91 @@
 #!/bin/bash
 
-DOMAIN="example.com"  # ⚠️ 请改成你的主域名（不要带 *）
+#############################################
+# ACME 自动申请/续签 + 自动重启 Docker Hysteria
+#############################################
+
+DOMAIN="example.com"     # ⚠️ 不要写 *.example.com
 OUT_DIR="/root/hysteria"
-KEY_FILE="$OUT_DIR/example.com.key"  # 固定为 example.com.key
-CRT_FILE="$OUT_DIR/example.com.crt"  # 固定为 example.com.crt
-CONFIG_FILE="./wildcard.cnf"
-RENEW_THRESHOLD=30  # 剩余天数小于这个就续
+
+KEY_FILE="$OUT_DIR/example.com.key"
+CRT_FILE="$OUT_DIR/example.com.crt"
+
+RENEW_THRESHOLD=30        # 剩余天数 < 30 自动续签
+CF_API="你的Cloudflare_API_Token"   # ⚠️ 必填
+
+DOCKER_CONTAINER="hysteria"   # Docker 容器名称
 
 mkdir -p "$OUT_DIR"
 
-# 防止 key 文件路径是目录
-if [ -d "$KEY_FILE" ]; then
-    echo "⚠️ 错误：$KEY_FILE 是一个目录，删除中..."
-    rm -rf "$KEY_FILE"
-fi
+# 修正之前错误：若为目录则删除
+[ -d "$KEY_FILE" ] && rm -rf "$KEY_FILE"
+[ -d "$CRT_FILE" ] && rm -rf "$CRT_FILE"
 
-# 防止 crt 文件路径是目录
-if [ -d "$CRT_FILE" ]; then
-    echo "⚠️ 错误：$CRT_FILE 是一个目录，删除中..."
-    rm -rf "$CRT_FILE"
-fi
 
+#############################################
+# 是否需要续签？
+#############################################
 should_renew() {
     if [ ! -f "$CRT_FILE" ]; then
-        return 0  # 没有证书，肯定要生成
+        return 0
     fi
 
-    end_date=$(openssl x509 -enddate -noout -in "$CRT_FILE" | cut -d= -f2)
+    end_date=$(openssl x509 -noout -enddate -in "$CRT_FILE" | cut -d= -f2)
     end_ts=$(date -d "$end_date" +%s)
     now_ts=$(date +%s)
-
     days_left=$(( (end_ts - now_ts) / 86400 ))
-    echo "📅 证书剩余有效期：$days_left 天"
 
-    if [ "$days_left" -lt "$RENEW_THRESHOLD" ]; then
-        return 0
-    else
-        return 1
-    fi
+    echo "📅 当前证书剩余：$days_left 天"
+
+    [ "$days_left" -lt "$RENEW_THRESHOLD" ] && return 0 || return 1
 }
 
+
+#############################################
+# 申请 / 安装 证书
+#############################################
+issue_cert() {
+
+    echo "🔁 开始申请/续签 Let's Encrypt 泛域名证书..."
+
+    export CF_Token="$CF_API"
+
+    ~/.acme.sh/acme.sh --issue \
+        --dns dns_cf \
+        -d "$DOMAIN" \
+        -d "*.$DOMAIN" \
+        --server letsencrypt \
+        --keylength ec-256 \
+        --force
+
+    ~/.acme.sh/acme.sh --install-cert -d "$DOMAIN" \
+        --ecc \
+        --key-file "$KEY_FILE" \
+        --fullchain-file "$CRT_FILE" \
+        --reloadcmd "docker restart $DOCKER_CONTAINER"
+
+    echo "✅ 证书安装完成"
+    echo "🔑 Key:  $KEY_FILE"
+    echo "📜 CRT:  $CRT_FILE"
+    echo "♻️ 已自动重启 Docker 容器：$DOCKER_CONTAINER"
+}
+
+
+#############################################
+# 安装 acme.sh（如未安装）
+#############################################
+if ! command -v ~/.acme.sh/acme.sh >/dev/null; then
+    echo "📦 正在安装 acme.sh ..."
+    curl https://get.acme.sh | sh
+    source ~/.bashrc
+fi
+
+
+#############################################
+# 主流程
+#############################################
 if should_renew; then
-    echo "🔁 正在生成/续签证书..."
-
-    cat > "$CONFIG_FILE" <<EOF
-[ req ]
-default_bits       = 2048
-prompt             = no
-default_md         = sha256
-distinguished_name = dn
-req_extensions     = req_ext
-
-[ dn ]
-C  = HK
-ST = Hong Kong
-L  = Hong Kong
-O  = Lin Studio
-OU = DevOps
-CN = *.$DOMAIN
-
-[ req_ext ]
-subjectAltName = @alt_names
-
-[ alt_names ]
-DNS.1 = *.$DOMAIN
-DNS.2 = $DOMAIN
-EOF
-
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout "$KEY_FILE" \
-    -out "$CRT_FILE" \
-    -config "$CONFIG_FILE" \
-    -extensions req_ext
-
-    rm -f "$CONFIG_FILE"
-
-    echo "✅ 自签证书已生成/更新："
-    echo "证书: $CRT_FILE"
-    echo "私钥: $KEY_FILE"
+    issue_cert
 else
-    echo "✅ 当前证书有效，无需更新。"
+    echo "🔒 当前证书有效，无需续签。"
 fi
